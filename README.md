@@ -7,6 +7,7 @@ A PHP extension that provides accurate Unicode grapheme cluster iteration using 
 - **Accurate Grapheme Cluster Detection**: Uses ICU4C's BreakIterator for precise Unicode text segmentation
 - **Iterator Pattern**: Implements `IteratorAggregate` and `Countable` interfaces
 - **Complex Unicode Support**: Handles emoji sequences, combining characters, and variation selectors
+- **East Asian Width Calculation**: Calculates display width based on Unicode EAW properties for proper text alignment
 - **Fallback Support**: Graceful degradation to UTF-8 character processing when ICU4C is unavailable
 
 ## Requirements
@@ -74,6 +75,27 @@ Creates an iterator for the given text that segments it into grapheme clusters.
 **Returns:**
 - `ICU4CIterator`: An iterator object implementing `IteratorAggregate` and `Countable`
 
+#### `icu4c_eaw_width(string $text): int`
+
+Calculates the display width of text based on East Asian Width (EAW) properties according to Unicode Standard Annex #11.
+
+**Parameters:**
+- `$text` (string): The input text to calculate width for
+
+**Returns:**
+- `int`: The total display width of the text
+
+**Width Calculation:**
+- **Wide (W)** and **Fullwidth (F)** characters: 2 units
+- **Narrow (Na)**, **Halfwidth (H)**, and **Ambiguous (A)** characters: 1 unit
+- **Neutral (N)** characters: 1 unit
+
+This function is particularly useful for:
+- Terminal/console applications requiring proper text alignment
+- Monospace font environments
+- CJK (Chinese, Japanese, Korean) text processing
+- Fixed-width layout calculations
+
 ### ICU4CIterator Class
 
 Implements the following interfaces:
@@ -117,6 +139,27 @@ echo count($iterator); // 4 (not 5, because é is one grapheme cluster)
 $emoji = "👨‍👩‍👧‍👦";
 $iterator = icu4c_iter($emoji);
 echo count($iterator); // 1 (entire family is one grapheme cluster)
+```
+
+### East Asian Width Calculation
+
+```php
+// ASCII text
+$text = "Hello";
+echo icu4c_eaw_width($text); // 5
+
+// Japanese text with wide characters
+$text = "こんにちは";
+echo icu4c_eaw_width($text); // 10 (5 characters × 2 units each)
+
+// Mixed text
+$text = "Hello世界";
+echo icu4c_eaw_width($text); // 9 (5 + 4)
+
+// Terminal alignment example
+$name = "田中太郎";
+$padding = 20 - icu4c_eaw_width($name);
+echo $name . str_repeat(' ', $padding) . "| End\n";
 ```
 
 ### Iterator Interface
