@@ -9,6 +9,7 @@
 #include <unicode/utext.h>
 #include <unicode/uloc.h>
 #include <unicode/ustring.h>
+#include <unicode/uchar.h>
 #endif
 
 #define PHP_ICU4C_VERSION "1.0.0"
@@ -45,10 +46,16 @@ typedef struct _icu4c_internal_iterator {
 
 // Function declarations
 PHP_FUNCTION(icu4c_iter);
+PHP_FUNCTION(icu4c_eaw_width);
 
 // ArgInfo declarations
 ZEND_BEGIN_ARG_INFO_EX(arginfo_icu4c_iter, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, text, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_icu4c_eaw_width, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, char, IS_STRING, 0)
+    ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, locale, IS_STRING, 1, "null")
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_icu4c_iterator_construct, 0, 0, 1)
@@ -94,6 +101,9 @@ PHP_METHOD(ICU4CIterator, count);
 #ifdef HAVE_ICU4C
 size_t icu4c_count_grapheme_clusters(const char *text, size_t text_len, int32_t **boundaries);
 zend_string *icu4c_get_cluster_at_position(const char *text, size_t text_len, const int32_t *boundaries, size_t cluster_index);
+UChar32 icu4c_get_first_codepoint(const char *str, size_t len);
+int icu4c_calculate_display_width(UEastAsianWidth eaw, zend_string *locale);
+bool icu4c_is_east_asian_locale(const char *locale);
 #endif
 
 // ICU4CIterator class initialization

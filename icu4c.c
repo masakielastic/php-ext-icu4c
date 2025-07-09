@@ -55,6 +55,48 @@ PHP_FUNCTION(icu4c_iter)
 #endif
 }
 
+// icu4c_eaw_width function implementation
+PHP_FUNCTION(icu4c_eaw_width)
+{
+    zend_string *input;
+    zend_string *locale = NULL;
+    
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_STR(input)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_STR_OR_NULL(locale)
+    ZEND_PARSE_PARAMETERS_END();
+    
+    if (ZSTR_LEN(input) == 0) {
+        RETURN_FALSE;
+    }
+    
+#ifdef HAVE_ICU4C
+    // Get first Unicode codepoint from string
+    UChar32 codepoint = icu4c_get_first_codepoint(ZSTR_VAL(input), ZSTR_LEN(input));
+    
+    if (codepoint < 0) {
+        RETURN_FALSE;
+    }
+    
+    // Get East Asian Width property
+    UEastAsianWidth eaw = (UEastAsianWidth)u_getIntPropertyValue(codepoint, UCHAR_EAST_ASIAN_WIDTH);
+    
+    // Calculate display width
+    int width = icu4c_calculate_display_width(eaw, locale);
+    
+    RETURN_LONG(width);
+#else
+    // Fallback: return 1 for single-byte, 2 for multi-byte
+    const unsigned char *str = (const unsigned char *)ZSTR_VAL(input);
+    if (str[0] < 0x80) {
+        RETURN_LONG(1);  // ASCII
+    } else {
+        RETURN_LONG(2);  // Multi-byte (assume wide)
+    }
+#endif
+}
+
 #ifdef HAVE_ICU4C
 // Count grapheme clusters and build boundary array
 size_t icu4c_count_grapheme_clusters(const char *text, size_t text_len, int32_t **boundaries)
@@ -138,11 +180,66 @@ zend_string *icu4c_get_cluster_at_position(const char *text, size_t text_len, co
     
     return NULL;
 }
+
+// Get first Unicode codepoint from UTF-8 string
+UChar32 icu4c_get_first_codepoint(const char *str, size_t len)
+{
+    if (len == 0) {
+        return -1;
+    }
+    
+    UChar32 codepoint;
+    int32_t index = 0;
+    
+    U8_NEXT(str, index, len, codepoint);
+    
+    if (codepoint < 0) {
+        return -1;
+    }
+    
+    return codepoint;
+}
+
+// Calculate display width based on East Asian Width property
+int icu4c_calculate_display_width(UEastAsianWidth eaw, zend_string *locale)
+{
+    switch (eaw) {
+        case U_EA_FULLWIDTH:  // [F] 全角
+        case U_EA_WIDE:       // [W] 広い
+            return 2;
+        
+        case U_EA_AMBIGUOUS:  // [A] 曖昧（コンテキスト依存）
+            if (locale && icu4c_is_east_asian_locale(ZSTR_VAL(locale))) {
+                return 2;  // 東アジア系ロケールでは全角扱い
+            }
+            return 1;  // その他では半角扱い
+        
+        case U_EA_HALFWIDTH:  // [H] 半角
+        case U_EA_NARROW:     // [Na] 狭い
+        case U_EA_NEUTRAL:    // [N] 中立
+        default:
+            return 1;
+    }
+}
+
+// Check if locale is East Asian
+bool icu4c_is_east_asian_locale(const char *locale)
+{
+    if (!locale) {
+        return false;
+    }
+    
+    // Check for East Asian locales (compatible with sample.php)
+    return (strncmp(locale, "ja", 2) == 0 ||  // Japanese
+            strncmp(locale, "zh", 2) == 0 ||  // Chinese
+            strncmp(locale, "ko", 2) == 0);   // Korean
+}
 #endif
 
 // Function entries
 const zend_function_entry icu4c_functions[] = {
     PHP_FE(icu4c_iter, arginfo_icu4c_iter)
+    PHP_FE(icu4c_eaw_width, arginfo_icu4c_eaw_width)
     PHP_FE_END
 };
 
