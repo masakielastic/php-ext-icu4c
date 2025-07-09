@@ -1,0 +1,52 @@
+# Compiled extension files
+*.so
+*.dylib
+*.dll
+*.o
+*.lo
+*.la
+
+# Build artifacts
+.libs/
+build/
+tmp/
+
+# PHP extension build files
+config.h
+config.log
+config.status
+configure
+configure.ac
+Makefile
+Makefile.global
+libtool
+run-tests.php
+install-sh
+missing
+mkinstalldirs
+
+# Generated files
+aclocal.m4
+config.guess
+config.sub
+ltmain.sh
+autom4te.cache/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+tests/*.diff
+tests/*.exp
+tests/*.log
+tests/*.out
+tests/*.php
+tests/*.sh
